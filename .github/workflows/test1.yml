@@ -1,0 +1,73 @@
+name: Generate Time Report and Upload Artifact
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  generate-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Get Current Date and Time
+        id: datetime
+        run: |
+          echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+          echo "time=$(date +'%H:%M:%S %Z')" >> $GITHUB_OUTPUT
+
+      - name: Log Message to Console
+        run: |
+          echo "Hello Rafi, the time is ${{ steps.datetime.outputs.time }} and date is ${{ steps.datetime.outputs.date }}"
+
+      - name: Create HTML Report
+        run: |
+          mkdir -p reports
+          cat << 'EOF' > reports/index.html
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Execution Report</title>
+              <style>
+                  body {
+                      font-family: Arial, sans-serif;
+                      display: flex;
+                      justify-content: center;
+                      align-items: center;
+                      height: 100vh;
+                      background-color: #f4f6f8;
+                      margin: 0;
+                  }
+                  .card {
+                      background: white;
+                      padding: 2rem;
+                      border-radius: 8px;
+                      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                      text-align: center;
+                  }
+                  h1 { color: #2c3e50; }
+                  p { font-size: 1.2rem; color: #555; }
+                  .highlight { font-weight: bold; color: #0066cc; }
+              </style>
+          </head>
+          <body>
+              <div class="card">
+                  <h1>Workflow Execution Status</h1>
+                  <p>Hello <span class="highlight">Rafi</span>,</p>
+                  <p>The time is <span class="highlight">${{ steps.datetime.outputs.time }}</span> and date is <span class="highlight">${{ steps.datetime.outputs.date }}</span>.</p>
+              </div>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload HTML Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: execution-html-report
+          path: reports/index.html
+          retention-days: 7
