@@ -1,44 +1,39 @@
-name: Generate Time Report and Upload Artifact
+name: Generate Time Report and Host on GitHub Pages
 
 on:
   push:
     branches:
       - '**'
+
+# Permissions required for GitHub Pages deployment
 permissions:
   contents: read
   pages: write
   id-token: write
 
+# Allow one concurrent deployment
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+
 jobs:
-  generate-report:
+  generate-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-        
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
 
-      - name: Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: 'reports'
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-        
       - name: Get Current Date and Time
         id: datetime
         run: |
           echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
           echo "time=$(date +'%H:%M:%S %Z')" >> $GITHUB_OUTPUT
 
-      - name: Log Message to Console
-        run: |
-          echo "Hello Rafi, the time is ${{ steps.datetime.outputs.time }} and date is ${{ steps.datetime.outputs.date }}"
-
+      # STEP 1: Create the directory AND the HTML file FIRST
       - name: Create HTML Report
         run: |
           mkdir -p reports
@@ -81,9 +76,21 @@ jobs:
           </html>
           EOF
 
-      - name: Upload HTML Report Artifact
-        uses: actions/upload-artifact@v4
+      # Verification step to confirm directory existence
+      - name: Verify Report Directory
+        run: ls -la reports/
+
+      # STEP 2: Configure Pages
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      # STEP 3: Upload Pages Artifact (Points to existing 'reports' path)
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: execution-html-report
-          path: reports/index.html
-          retention-days: 7
+          path: 'reports'
+
+      # STEP 4: Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
